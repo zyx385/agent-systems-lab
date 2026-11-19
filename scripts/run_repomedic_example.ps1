@@ -1,9 +1,9 @@
 param(
-    [string]$Output = "artifacts/repomedic-demo-live.json"
+    [string]$Output = "artifacts/repomedic-example-live.json"
 )
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$demoRepository = Join-Path $projectRoot "examples/repomedic/demo_repo"
+$sampleRepository = Join-Path $projectRoot "examples/repomedic/sample_repo"
 $outputPath = Join-Path $projectRoot $Output
 
 if (-not $env:DASHSCOPE_API_KEY -or -not $env:DASHSCOPE_BASE_URL -or -not $env:DASHSCOPE_MODEL) {
@@ -11,7 +11,7 @@ if (-not $env:DASHSCOPE_API_KEY -or -not $env:DASHSCOPE_BASE_URL -or -not $env:D
 }
 
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $outputPath) | Out-Null
-python -m repomedic.cli $demoRepository `
+python -m repomedic.cli $sampleRepository `
     --issue "total_price concatenates string prices instead of adding numbers" `
     --traceback 'File "app/pricing.py", line 2, in total_price' `
     --backend dashscope `

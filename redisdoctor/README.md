@@ -9,17 +9,13 @@ RedisDoctor 是面向 Redis 运维与技术支持场景的证据约束问答工�
 3. 执行版本兼容过滤、引用校验和证据不足拒答。
 4. 输出结构化回答：意图、模块、检索模式、引用来源与拒答原因。
 
-## 本地演示
+## 可复现运行示例
 
 ```powershell
 python -m redisdoctor.cli "为什么 AOF 重写可能带来延迟？" `
   --document examples/redis/persistence.md --version 7.2 --module persistence
-```
 
-或运行固定演示：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/run_redisdoctor_demo.ps1
+powershell -ExecutionPolicy Bypass -File scripts/run_redisdoctor_example.ps1
 ```
 
 ## 评测摘要

@@ -1,13 +1,13 @@
 # Agent Systems Lab
 
-包含两个可运行的 AI 系统：RepoMedic 用于处理 Python 仓库故障定位，RedisDoctor 用于提供带版本约束与引用校验的  Redis 技术支持回答。
+包含两个可运行的 AI 系统：RepoMedic 用于 Python 仓库故障定位，RedisDoctor 用于生成带版本约束和引用校验的 Redis 技术支持回答。
 
 | 项目 | 解决的问题 | 核心能力 |
 | --- | --- | --- |
 | [RepoMedic](repomedic/README.md) | 从 Issue、Traceback 与失败测试中定位 Python 仓库的疑似根因 | 多 Agent 分工、受限工具调用、证据聚合、Verifier 实测确认 |
 | [RedisDoctor](redisdoctor/README.md) | 在 Redis 版本差异下生成可追溯的技术支持回答 | 版本感知检索、证据约束回答、引用校验、QLoRA 训练与人工评审 |
 
-## 三分钟概览
+## 系统概览
 
 ```mermaid
 flowchart LR
@@ -20,22 +20,18 @@ flowchart LR
     I["QLoRA 训练样例"] --> F
 ```
 
-## 快速开始
+## 快速验证
 
-本地演示与测试不需要 API Key 或 GPU。
+以下命令用于验证两个系统的核心链路；它们不是项目本身的全部功能。本地验证不需要 API Key 或 GPU。
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
-```
 
-运行无需外部服务的两个演示：
-
-```powershell
-python scripts/replay_repomedic_demo.py docs/demo/repomedic-demo-success.json
-powershell -ExecutionPolicy Bypass -File scripts/run_redisdoctor_demo.ps1
+python scripts/replay_repomedic_example.py docs/verification/repomedic-example-run.json
+powershell -ExecutionPolicy Bypass -File scripts/run_redisdoctor_example.ps1
 ```
 
 如需调用外部模型，请从 [`.env.example`](.env.example) 创建本地 `.env`；密钥不会写入代码、日志或仓库。
@@ -44,7 +40,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_redisdoctor_demo.ps1
 
 - [项目规格](docs/spec.md)
 - [RepoMedic 多 Agent 设计](docs/design/repomedic-complex-multi-agent-v2.md)
-- [RepoMedic 演示与工具轨迹](docs/demo/README.md)
+- [RepoMedic 验证材料](docs/verification/README.md)
 - [最终评测摘要与边界](docs/evaluation.md)
 - [RedisDoctor QLoRA 训练资产](training/redisdoctor/README.md)
 - [脱敏训练与评测样例](examples/redisdoctor/)
@@ -57,7 +53,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_redisdoctor_demo.ps1
 
 ## 范围与边界
 
-- RepoMedic 的外部模型调用是可选路径；默认演示使用本地确定性工具链。
+- RepoMedic 的外部模型调用是可选路径；默认验证使用本地确定性工具链。
 - RedisDoctor 当前实现的是版本过滤与证据校验的 RAG 管线；**未将真实 LightRAG 检索实现作为已完成成果**。
 - 公开仓库仅保留脱敏样例、最终配置与汇总结论。原始审核包、运行日志和完整训练数据不属于发布内容。
 

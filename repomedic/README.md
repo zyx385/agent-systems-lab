@@ -18,10 +18,10 @@ flowchart LR
 - **Evidence Coordinator**：去重证据，形成文件级候选与待验证假设。
 - **Verifier**：仅在候选文件、故障现象与测试之间存在可验证关系时确认结论。
 
-## 运行演示
+## 可复现运行示例
 
 ```powershell
-python scripts/replay_repomedic_demo.py docs/demo/repomedic-demo-success.json
+python scripts/replay_repomedic_example.py docs/verification/repomedic-example-run.json
 ```
 
 也可对当前仓库执行本地确定性诊断：
@@ -30,7 +30,7 @@ python scripts/replay_repomedic_demo.py docs/demo/repomedic-demo-success.json
 python -m repomedic.cli . --issue "RepositoryTools is missing" --json
 ```
 
-外部模型是可选的。`scripts/run_repomedic_demo.ps1` 会调用 DashScope，需要事先配置环境变量；日志与输出不应包含密钥。
+外部模型是可选的。`scripts/run_repomedic_example.ps1` 会调用 DashScope，需要事先配置环境变量；日志与输出不应包含密钥。
 
 ## 评测
 

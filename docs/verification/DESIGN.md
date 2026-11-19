@@ -1,4 +1,4 @@
-# RepoMedic Demo Visual Identity
+# RepoMedic Verification Visual Identity
 
 ## Style Prompt
 

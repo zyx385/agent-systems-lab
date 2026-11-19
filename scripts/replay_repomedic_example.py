@@ -9,7 +9,7 @@ from pathlib import Path
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
-    parser = argparse.ArgumentParser(description="离线回放RepoMedic成功演示日志")
+    parser = argparse.ArgumentParser(description="离线回放 RepoMedic 已验证运行记录")
     parser.add_argument("log", type=Path)
     parser.add_argument("--mode", choices=("multi", "single"))
     parser.add_argument("--case-id")

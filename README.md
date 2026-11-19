@@ -1,6 +1,6 @@
-# Agent Internship Lab
+# Agent Systems Lab
 
-面向 AI 应用实习的两个可运行项目：一个处理 Python 仓库故障定位，另一个提供带版本约束与引用校验的 Redis 技术支持回答。
+包含两个可运行的AI系统：RepoMedic用于处理Python仓库故障定位，RedisDoctor用于提供带版本约束与引用校验的Redis技术支持回答。
 
 | 项目 | 解决的问题 | 核心能力 |
 | --- | --- | --- |

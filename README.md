@@ -1,6 +1,6 @@
 # Agent Systems Lab
 
-包含两个可运行的 AI 系统：RepoMedic 用于 Python 仓库故障定位，RedisDoctor 用于生成带版本约束和引用校验的 Redis 技术支持回答。
+包含两个可运行的 AI 系统：RepoMedic 用于处理 Python 仓库故障定位，RedisDoctor 用于提供带版本约束与引用校验的  Redis 技术支持回答。
 
 | 项目 | 解决的问题 | 核心能力 |
 | --- | --- | --- |

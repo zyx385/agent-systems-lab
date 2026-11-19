@@ -3,7 +3,7 @@ requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agent-internship-lab"
+name = "agent-systems-lab"
 version = "0.1.0"
 description = "RepoMedic多Agent诊断与RedisDoctor微调加RAG实验仓库"
 requires-python = ">=3.11"

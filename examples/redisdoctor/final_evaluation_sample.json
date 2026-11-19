@@ -1,0 +1,37 @@
+[
+  {
+    "id": "sample-key-expiration-citation",
+    "source_group": "key-expiration",
+    "scenario": "citation_selection",
+    "input": {
+      "question": "How does Redis key expiration behave while a server is stopped?",
+      "redis_version": null,
+      "evidence": [
+        {
+          "source_id": "key-expiration",
+          "title": "Redis key expiration behavior",
+          "text": "Redis stores expiry dates, so elapsed time still counts while a server is stopped.",
+          "source_url": "https://redis.io/docs/latest/develop/using-commands/keyspace/"
+        }
+      ]
+    },
+    "expected": {
+      "should_abstain": false,
+      "cited_source_ids": ["key-expiration"]
+    }
+  },
+  {
+    "id": "sample-insufficient-evidence",
+    "source_group": "refusal",
+    "scenario": "refusal",
+    "input": {
+      "question": "Does Redis provide quantum index acceleration?",
+      "redis_version": null,
+      "evidence": []
+    },
+    "expected": {
+      "should_abstain": true,
+      "cited_source_ids": []
+    }
+  }
+]

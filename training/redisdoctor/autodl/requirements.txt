@@ -1,0 +1,5 @@
+llamafactory==0.9.5
+sentence-transformers>=5.0,<6
+faiss-cpu>=1.12,<2
+peft>=0.17,<1
+bitsandbytes>=0.46,<1

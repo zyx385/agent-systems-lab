@@ -1,0 +1,170 @@
+[
+  {
+    "id": "tenant-cache-key",
+    "issue": "A user keeps an admin role after switching to a tenant where they are only a viewer",
+    "expected_file": "app/permissions/cache.py",
+    "required_questions": ["Does the permission cache key include both tenant_id and user_id?", "Which layer passes tenant context into the role lookup?"],
+    "suggested_roles": ["call_chain", "state", "security", "test_forensics"],
+    "files": {
+      "app/api.py": "from app.services.access import role_for_request\n\ndef get_dashboard(tenant_id, user_id, cache):\n    return role_for_request(tenant_id, user_id, cache)\n",
+      "app/services/access.py": "from app.permissions.cache import cached_role\n\ndef role_for_request(tenant_id, user_id, cache):\n    return cached_role(tenant_id, user_id, cache)\n",
+      "app/permissions/cache.py": "def cached_role(tenant_id, user_id, cache):\n    key = f'role:{user_id}'\n    if key not in cache:\n        cache[key] = {'alpha': 'admin', 'beta': 'viewer'}[tenant_id]\n    return cache[key]\n",
+      "tests/test_tenant_cache.py": "from app.api import get_dashboard\n\ndef test_role_cache_isolated_by_tenant():\n    cache = {}\n    assert get_dashboard('alpha', 'u1', cache) == 'admin'\n    assert get_dashboard('beta', 'u1', cache) == 'viewer'\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "resource-scope-bypass",
+    "issue": "A user in one organization can read a document from another organization",
+    "expected_file": "app/repositories/documents.py",
+    "required_questions": ["Where is organization scope checked from route to repository?", "Does the repository query constrain the requested document by org_id?"],
+    "suggested_roles": ["call_chain", "security", "test_forensics"],
+    "files": {
+      "app/api.py": "from app.services.documents import read_document\n\ndef get_document(org_id, document_id, rows):\n    return read_document(org_id, document_id, rows)\n",
+      "app/services/documents.py": "from app.repositories.documents import find_document\n\ndef read_document(org_id, document_id, rows):\n    return find_document(rows, document_id)\n",
+      "app/repositories/documents.py": "def find_document(rows, document_id):\n    return next(row for row in rows if row['id'] == document_id)\n",
+      "tests/test_document_scope.py": "from app.api import get_document\n\ndef test_document_is_scoped_to_organization():\n    rows = [{'id': 'd1', 'org_id': 'beta', 'title': 'secret'}, {'id': 'd1', 'org_id': 'alpha', 'title': 'public'}]\n    assert get_document('alpha', 'd1', rows)['title'] == 'public'\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "async-session-lifecycle",
+    "issue": "A background export task uses a database session after the request has closed it",
+    "expected_file": "app/jobs/dispatch.py",
+    "required_questions": ["Which object crosses the request-to-background-task boundary?", "Is the session still valid when the queued task executes?"],
+    "suggested_roles": ["call_chain", "async", "test_forensics"],
+    "files": {
+      "app/api.py": "from app.services.exports import start_export\n\ndef request_export(session):\n    return start_export(session)\n",
+      "app/services/exports.py": "from app.jobs.dispatch import queue_export\n\ndef start_export(session):\n    return queue_export(session)\n",
+      "app/jobs/dispatch.py": "def queue_export(session):\n    def task():\n        return session.fetch_name()\n    return task\n",
+      "tests/test_session_lifecycle.py": "from app.api import request_export\n\nclass Session:\n    def __init__(self): self.closed = False\n    def close(self): self.closed = True\n    def fetch_name(self):\n        if self.closed: raise RuntimeError('session closed')\n        return 'Ada'\n\ndef test_background_task_does_not_capture_closed_session():\n    session = Session()\n    task = request_export(session)\n    session.close()\n    assert task() == 'Ada'\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "webhook-idempotency-race",
+    "issue": "A duplicate webhook event creates two orders during an interleaving before the idempotency mark",
+    "expected_file": "app/services/webhooks.py",
+    "required_questions": ["Is the idempotency mark written before or after the order side effect?", "What event state is shared across two deliveries?"],
+    "suggested_roles": ["state", "call_chain", "test_forensics"],
+    "files": {
+      "app/api.py": "from app.services.webhooks import process_event\n\ndef receive(event_id, orders, handled, before_mark=None):\n    return process_event(event_id, orders, handled, before_mark)\n",
+      "app/services/orders.py": "def create_order(event_id, orders):\n    orders.append(event_id)\n",
+      "app/services/webhooks.py": "from app.services.orders import create_order\n\ndef process_event(event_id, orders, handled, before_mark=None):\n    if event_id in handled:\n        return\n    create_order(event_id, orders)\n    if before_mark:\n        before_mark()\n    handled.add(event_id)\n",
+      "tests/test_webhook_idempotency.py": "from app.api import receive\n\ndef test_duplicate_event_creates_one_order_under_interleaving():\n    orders, handled = [], set()\n    receive('evt-1', orders, handled, lambda: receive('evt-1', orders, handled))\n    assert orders == ['evt-1']\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "retry-transaction-leak",
+    "issue": "A retry reuses a failed transaction instead of creating a clean transaction",
+    "expected_file": "app/services/payments.py",
+    "required_questions": ["Which layer owns transaction creation across retries?", "Does the second attempt receive a transaction that was marked failed?"],
+    "suggested_roles": ["call_chain", "state", "test_forensics"],
+    "files": {
+      "app/api.py": "from app.services.payments import charge_with_retry\n\ndef charge(factory):\n    return charge_with_retry(factory)\n",
+      "app/repositories/charges.py": "def write_charge(tx, fail_first):\n    if fail_first():\n        tx.failed = True\n        raise ValueError('temporary failure')\n    if tx.failed:\n        raise RuntimeError('transaction unusable')\n    return 'charged'\n",
+      "app/services/payments.py": "from app.repositories.charges import write_charge\n\ndef charge_with_retry(factory):\n    tx = factory()\n    try:\n        return write_charge(tx, lambda: True)\n    except ValueError:\n        return write_charge(tx, lambda: False)\n",
+      "tests/test_retry_transaction.py": "from app.api import charge\n\nclass Transaction:\n    failed = False\n\ndef test_retry_uses_clean_transaction():\n    assert charge(Transaction) == 'charged'\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "feature-flag-coercion",
+    "issue": "The export endpoint is enabled even when FEATURE_EXPORT is set to false",
+    "expected_file": "app/config/flags.py",
+    "required_questions": ["How is the raw environment string converted into a boolean?", "Which endpoint consumes the flag decision?"],
+    "suggested_roles": ["config", "call_chain", "security", "test_forensics"],
+    "files": {
+      "app/api.py": "from app.services.exports import export_allowed\n\ndef export(settings):\n    if not export_allowed(settings):\n        return 403\n    return 200\n",
+      "app/services/exports.py": "from app.config.flags import enabled\n\ndef export_allowed(settings):\n    return enabled(settings['FEATURE_EXPORT'])\n",
+      "app/config/flags.py": "def enabled(raw):\n    return bool(raw)\n",
+      "tests/test_feature_flag.py": "from app.api import export\n\ndef test_false_string_disables_export():\n    assert export({'FEATURE_EXPORT': 'false'}) == 403\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "config-precedence-drift",
+    "issue": "An environment timeout override is silently replaced by the default timeout",
+    "expected_file": "app/config/settings.py",
+    "required_questions": ["What is the merge order for defaults and environment variables?", "What timeout reaches the client after configuration is loaded?"],
+    "suggested_roles": ["config", "call_chain", "test_forensics"],
+    "files": {
+      "app/api.py": "from app.services.client import timeout_for_request\n\ndef request(env):\n    return timeout_for_request(env)\n",
+      "app/services/client.py": "from app.config.settings import load_settings\n\ndef timeout_for_request(env):\n    return load_settings(env)['TIMEOUT']\n",
+      "app/config/settings.py": "def load_settings(env):\n    settings = dict(env)\n    settings.update({'TIMEOUT': 30})\n    return settings\n",
+      "tests/test_config_precedence.py": "from app.api import request\n\ndef test_environment_timeout_overrides_default():\n    assert request({'TIMEOUT': 5}) == 5\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "timezone-cache-mismatch",
+    "issue": "Equivalent timezone timestamps create different calendar cache entries",
+    "expected_file": "app/services/calendar.py",
+    "required_questions": ["Where are timestamps normalized before caching?", "Does the cache key represent the instant or the original string?"],
+    "suggested_roles": ["call_chain", "state", "test_forensics"],
+    "files": {
+      "app/api.py": "from app.services.calendar import lookup\n\ndef event_at(value, cache):\n    return lookup(value, cache)\n",
+      "app/parsing/timestamps.py": "from datetime import datetime\n\ndef parse(value):\n    return datetime.fromisoformat(value)\n",
+      "app/services/calendar.py": "from app.parsing.timestamps import parse\n\ndef lookup(value, cache):\n    parse(value)\n    cache.setdefault(value, 'event')\n    return cache[value]\n",
+      "tests/test_timezone_cache.py": "from app.api import event_at\n\ndef test_equivalent_instants_share_one_cache_entry():\n    cache = {}\n    event_at('2026-01-01T10:00:00+00:00', cache)\n    event_at('2026-01-01T11:00:00+01:00', cache)\n    assert len(cache) == 1\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "serialization-cycle",
+    "issue": "Project serialization recurses forever through a project-task back reference",
+    "expected_file": "app/serializers/project.py",
+    "required_questions": ["Which object edge creates the recursive cycle?", "Does the response serializer traverse both project-to-task and task-to-project?"],
+    "suggested_roles": ["call_chain", "state", "test_forensics"],
+    "files": {
+      "app/api.py": "from app.services.projects import response_for\n\ndef get_project(project):\n    return response_for(project)\n",
+      "app/services/projects.py": "from app.serializers.project import serialize_project\n\ndef response_for(project):\n    return serialize_project(project)\n",
+      "app/serializers/project.py": "def serialize_project(project):\n    return {'name': project['name'], 'tasks': [serialize_task(task) for task in project['tasks']]}\n\ndef serialize_task(task):\n    return {'name': task['name'], 'project': serialize_project(task['project'])}\n",
+      "tests/test_serialization_cycle.py": "from app.api import get_project\n\ndef test_project_response_does_not_recurse_through_back_reference():\n    project = {'name': 'p', 'tasks': []}\n    project['tasks'].append({'name': 't', 'project': project})\n    assert get_project(project) == {'name': 'p', 'tasks': [{'name': 't'}]}\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "adapter-signature-drift",
+    "issue": "Upload passes content type and data in the wrong shape through an adapter wrapper",
+    "expected_file": "app/adapters/storage.py",
+    "required_questions": ["What signature does the storage adapter require?", "How does the service wrapper forward data and content_type?"],
+    "suggested_roles": ["call_chain", "config", "test_forensics"],
+    "files": {
+      "app/api.py": "from app.services.uploads import save_upload\n\ndef upload(data, content_type):\n    return save_upload(data, content_type)\n",
+      "app/services/uploads.py": "from app.adapters.storage import upload_blob\n\ndef save_upload(data, content_type):\n    return upload_blob(content_type, data)\n",
+      "app/adapters/storage.py": "def upload_blob(data, *, content_type):\n    return {'bytes': len(data), 'type': content_type}\n",
+      "tests/test_adapter_signature.py": "from app.api import upload\n\ndef test_upload_forwards_keyword_content_type():\n    assert upload(b'abc', 'text/plain') == {'bytes': 3, 'type': 'text/plain'}\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "stale-search-index",
+    "issue": "Search returns a document title from the old event snapshot after an update",
+    "expected_file": "app/indexing/events.py",
+    "required_questions": ["Which document snapshot is put into the indexing event?", "Does indexing happen before or after the document mutation?"],
+    "suggested_roles": ["call_chain", "state", "test_forensics"],
+    "files": {
+      "app/api.py": "from app.services.documents import rename\n\ndef update_title(document, title, index):\n    return rename(document, title, index)\n",
+      "app/services/documents.py": "from app.indexing.events import publish_update\n\ndef rename(document, title, index):\n    return publish_update(document, title, index)\n",
+      "app/indexing/events.py": "def publish_update(document, title, index):\n    old_snapshot = dict(document)\n    document['title'] = title\n    index[document['id']] = old_snapshot['title']\n    return index[document['id']]\n",
+      "tests/test_stale_index.py": "from app.api import update_title\n\ndef test_index_uses_updated_title():\n    document, index = {'id': 'd1', 'title': 'old'}, {}\n    assert update_title(document, 'new', index) == 'new'\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "exception-translation-mask",
+    "issue": "An authorization error is converted into HTTP 500 instead of HTTP 403",
+    "expected_file": "app/middleware/errors.py",
+    "required_questions": ["Which exception type represents a denied request?", "Where is that exception translated into an HTTP response?"],
+    "suggested_roles": ["call_chain", "security", "test_forensics"],
+    "files": {
+      "app/api.py": "from app.middleware.errors import handle\nfrom app.services.reports import read_report\n\ndef report(user):\n    return handle(lambda: read_report(user))\n",
+      "app/services/reports.py": "def read_report(user):\n    if user != 'admin':\n        raise PermissionError('denied')\n    return 200\n",
+      "app/middleware/errors.py": "def handle(action):\n    try:\n        return action()\n    except Exception:\n        return 500\n",
+      "tests/test_exception_translation.py": "from app.api import report\n\ndef test_permission_error_becomes_forbidden():\n    assert report('viewer') == 403\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  }
+]

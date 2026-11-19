@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-internship-lab"
+version = "0.1.0"
+description = "RepoMedic多Agent诊断与RedisDoctor微调加RAG实验仓库"
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2.8,<3"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.11", "openpyxl>=3.1"]
+repomedic = ["crewai>=1,<2"]
+redisdoctor = ["lightrag-hku>=1.4,<2"]
+
+[project.scripts]
+repomedic = "repomedic.cli:main"
+redisdoctor = "redisdoctor.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["repomedic*", "redisdoctor*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

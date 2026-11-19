@@ -1,0 +1,102 @@
+[
+  {
+    "source_id": "persistence-overview",
+    "title": "Redis persistence: RDB and AOF",
+    "text": "Redis supports RDB point-in-time snapshots and AOF logging of write operations. RDB is compact and usually restarts faster, while AOF can provide stronger durability depending on the fsync policy. When both are enabled, Redis uses AOF to reconstruct the dataset at restart because it is normally more complete.",
+    "source_url": "https://redis.io/docs/latest/management/persistence/",
+    "module": "persistence",
+    "kind": "documentation"
+  },
+  {
+    "source_id": "aof-rewrite",
+    "title": "AOF background rewrite",
+    "text": "AOF rewrite compacts the append-only log into the shortest sequence needed to rebuild the current dataset. Redis can perform BGREWRITEAOF in the background. Fork, disk I/O, fsync policy, and writes during rewrite can contribute to latency, so INFO persistence and latency observations should be checked.",
+    "source_url": "https://redis.io/docs/latest/management/persistence/",
+    "module": "persistence",
+    "kind": "documentation"
+  },
+  {
+    "source_id": "aof-multipart-redis7",
+    "title": "Redis 7 multi-part AOF",
+    "text": "Since Redis 7.0, AOF uses a multi-part mechanism with at most one base file, one or more incremental files, and a manifest that tracks them in a dedicated append-only directory.",
+    "source_url": "https://redis.io/docs/latest/management/persistence/",
+    "redis_version": "7.0",
+    "module": "persistence",
+    "kind": "documentation"
+  },
+  {
+    "source_id": "aof-legacy-redis6",
+    "title": "Redis 6 AOF rewrite behavior",
+    "text": "Before Redis 7.0, AOF did not use the Redis 7 multi-part base and incremental file layout. During rewrite, incoming write commands could be buffered in memory and written to disk again when the rewrite completed.",
+    "source_url": "https://redis.io/docs/latest/management/persistence/",
+    "redis_version": "6.2",
+    "module": "persistence",
+    "kind": "documentation"
+  },
+  {
+    "source_id": "replication-overview",
+    "title": "Redis replication and partial resynchronization",
+    "text": "A Redis master streams dataset-changing commands to replicas. If the link breaks, a replica reconnects and first attempts partial resynchronization so that it receives only the missed command stream; otherwise a full resynchronization is required. INFO replication and ROLE expose replication state.",
+    "source_url": "https://redis.io/docs/latest/operate/oss_and_stack/management/replication/",
+    "module": "replication",
+    "kind": "documentation"
+  },
+  {
+    "source_id": "sentinel-overview",
+    "title": "Redis Sentinel capabilities",
+    "text": "Redis Sentinel provides high availability for non-clustered Redis through monitoring, notifications, automatic failover, and configuration-provider behavior. During failover it can promote a replica and tell clients the new master address.",
+    "source_url": "https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/",
+    "module": "replication",
+    "kind": "documentation"
+  },
+  {
+    "source_id": "scan-keyspace",
+    "title": "Incremental keyspace iteration with SCAN",
+    "text": "SCAN incrementally iterates keys using a cursor and supports MATCH and COUNT options. Production keyspace iteration should prefer SCAN over KEYS because KEYS can block while examining the entire keyspace. A complete iteration ends when the returned cursor becomes zero.",
+    "source_url": "https://redis.io/docs/latest/commands/scan/",
+    "module": "command",
+    "kind": "documentation"
+  },
+  {
+    "source_id": "scan-type-redis6",
+    "title": "Redis 6 SCAN TYPE option",
+    "text": "Redis 6.0 added the TYPE option to SCAN, allowing an iteration to filter returned keys by their value type in addition to MATCH and COUNT.",
+    "source_url": "https://redis.io/docs/latest/commands/scan/",
+    "redis_version": "6.0",
+    "module": "command",
+    "kind": "documentation"
+  },
+  {
+    "source_id": "key-eviction",
+    "title": "maxmemory and key eviction",
+    "text": "When Redis memory exceeds the maxmemory limit, it applies the configured maxmemory-policy. Policies include noeviction and policies that select keys using LRU, LFU, TTL, or random strategies, either from all keys or only keys with expiration.",
+    "source_url": "https://redis.io/docs/latest/develop/reference/eviction/",
+    "module": "configuration",
+    "kind": "documentation"
+  },
+  {
+    "source_id": "latency-diagnosis",
+    "title": "Diagnosing Redis latency",
+    "text": "Redis latency diagnosis should establish intrinsic latency, inspect SLOWLOG for blocking commands, use the latency monitor, check virtualization and transparent huge pages, and investigate fork, disk I/O, swapping, network round trips, and persistence fsync behavior. KEYS in production is a common source of latency.",
+    "source_url": "https://redis.io/docs/latest/management/optimization/latency/",
+    "module": "performance",
+    "kind": "documentation"
+  },
+  {
+    "source_id": "transactions",
+    "title": "Redis transactions",
+    "text": "Redis transactions use MULTI, EXEC, DISCARD, and WATCH. Commands queued after MULTI execute together when EXEC is called. Redis does not provide SQL-style rollback for runtime command errors; WATCH supplies optimistic locking by aborting EXEC when watched keys change.",
+    "source_url": "https://redis.io/docs/latest/develop/using-commands/transactions/",
+    "module": "command",
+    "kind": "documentation"
+  },
+  {
+    "source_id": "acl-redis6",
+    "title": "Redis 6 access control lists",
+    "text": "Redis 6 introduced ACLs. ACL users can be limited to specific commands and key patterns and authenticate with a username and password. Redis 6 remains backward compatible through the default user configuration.",
+    "source_url": "https://redis.io/docs/latest/operate/oss_and_stack/management/security/acl/",
+    "redis_version": "6.0",
+    "module": "configuration",
+    "kind": "documentation"
+  }
+]

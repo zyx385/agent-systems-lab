@@ -1,0 +1,124 @@
+[
+  {
+    "id": "division-zero",
+    "issue": "calculate_ratio raises ZeroDivisionError when total is zero",
+    "traceback": "File \"app/calculator.py\", line 2, in calculate_ratio",
+    "expected_file": "app/calculator.py",
+    "files": {
+      "app/calculator.py": "def calculate_ratio(value, total):\n    return value / total\n",
+      "tests/test_calculator.py": "from app.calculator import calculate_ratio\n\ndef test_zero_total():\n    assert calculate_ratio(5, 0) == 0\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "pagination-off-by-one",
+    "issue": "paginate drops the final item on exact page boundaries",
+    "expected_file": "app/pagination.py",
+    "files": {
+      "app/pagination.py": "def paginate(items, size):\n    return [items[i:i + size] for i in range(0, len(items) - size, size)]\n",
+      "tests/test_pagination.py": "from app.pagination import paginate\n\ndef test_boundary():\n    assert paginate([1, 2], 2) == [[1, 2]]\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "missing-user",
+    "issue": "display_name crashes when user lookup returns None",
+    "expected_file": "app/users.py",
+    "files": {
+      "app/users.py": "def display_name(user):\n    return user['name'].strip()\n",
+      "tests/test_users.py": "from app.users import display_name\n\ndef test_missing():\n    assert display_name(None) == 'anonymous'\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "mutable-default",
+    "issue": "collect_events leaks events between requests",
+    "expected_file": "app/events.py",
+    "files": {
+      "app/events.py": "def collect_events(event, events=[]):\n    events.append(event)\n    return events\n",
+      "tests/test_events.py": "from app.events import collect_events\n\ndef test_isolated():\n    assert collect_events('a') == ['a']\n    assert collect_events('b') == ['b']\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "authorization-comparison",
+    "issue": "is_admin grants access to the viewer role",
+    "expected_file": "app/auth.py",
+    "files": {
+      "app/auth.py": "def is_admin(role):\n    return role != 'guest'\n",
+      "tests/test_auth.py": "from app.auth import is_admin\n\ndef test_viewer():\n    assert not is_admin('viewer')\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "missing-config-key",
+    "issue": "load_timeout raises KeyError when timeout is omitted",
+    "expected_file": "app/config.py",
+    "files": {
+      "app/config.py": "def load_timeout(config):\n    return int(config['timeout'])\n",
+      "tests/test_config.py": "from app.config import load_timeout\n\ndef test_default():\n    assert load_timeout({}) == 30\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "recursive-tree",
+    "issue": "walk_tree recurses forever when a node links to itself",
+    "expected_file": "app/tree.py",
+    "files": {
+      "app/tree.py": "def walk_tree(node):\n    return [node['name']] + sum((walk_tree(x) for x in node['children']), [])\n",
+      "tests/test_tree.py": "from app.tree import walk_tree\n\ndef test_cycle():\n    node={'name':'x','children':[]}\n    node['children'].append(node)\n    assert walk_tree(node) == ['x']\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "date-format",
+    "issue": "parse_date rejects ISO timestamps with a timezone suffix",
+    "expected_file": "app/dates.py",
+    "files": {
+      "app/dates.py": "from datetime import datetime\n\ndef parse_date(value):\n    return datetime.strptime(value, '%Y-%m-%d')\n",
+      "tests/test_dates.py": "from app.dates import parse_date\n\ndef test_iso():\n    assert parse_date('2026-01-01T10:00:00+00:00').year == 2026\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "matrix-alias",
+    "issue": "make_matrix aliases rows so one update changes every row",
+    "expected_file": "app/matrix.py",
+    "files": {
+      "app/matrix.py": "def make_matrix(size):\n    return [[0] * size] * size\n",
+      "tests/test_matrix.py": "from app.matrix import make_matrix\n\ndef test_rows():\n    m=make_matrix(2); m[0][0]=1\n    assert m[1][0] == 0\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "missing-await",
+    "issue": "fetch_name returns a coroutine instead of the response value",
+    "expected_file": "app/client.py",
+    "files": {
+      "app/client.py": "async def fetch_name(client):\n    response = client.get('/name')\n    return response.json()['name']\n",
+      "tests/test_client.py": "from app.client import fetch_name\n\nclass Response:\n    def json(self):\n        return {'name': 'Ada'}\n\nclass PendingResponse:\n    def __await__(self):\n        if False:\n            yield None\n        return Response()\n\nclass Client:\n    def get(self, path):\n        return PendingResponse()\n\ndef test_awaits_response():\n    operation = fetch_name(Client())\n    try:\n        operation.send(None)\n    except StopIteration as completed:\n        result = completed.value\n    else:\n        raise AssertionError('fetch_name did not finish')\n    assert result == 'Ada'\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "relative-resource",
+    "issue": "load_template fails when the process starts outside the repository",
+    "expected_file": "app/loader.py",
+    "files": {
+      "app/loader.py": "from pathlib import Path\n\ndef load_template():\n    return Path('templates/main.txt').read_text()\n",
+      "templates/main.txt": "hello",
+      "tests/test_loader.py": "from app.loader import load_template\n\ndef test_template(tmp_path, monkeypatch):\n    monkeypatch.chdir(tmp_path)\n    assert load_template() == 'hello'\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  },
+  {
+    "id": "decimal-price",
+    "issue": "total_price concatenates string prices instead of adding numbers",
+    "expected_file": "app/pricing.py",
+    "files": {
+      "app/pricing.py": "def total_price(left, right):\n    return left + right\n",
+      "tests/test_pricing.py": "from app.pricing import total_price\n\ndef test_strings():\n    assert total_price('2.5', '3.0') == 5.5\n"
+    },
+    "verification_command": ["python", "-m", "pytest", "-q"]
+  }
+]

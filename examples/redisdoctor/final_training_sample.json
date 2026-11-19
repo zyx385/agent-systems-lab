@@ -1,0 +1,21 @@
+[
+  {
+    "id": "sample-acl-version-comparison",
+    "source_group": "acl-version-comparison",
+    "scenario": "version",
+    "messages": [
+      {
+        "from": "system",
+        "value": "Answer only from supplied Redis evidence. Return JSON with intent, module, rewritten_query, mode, should_abstain, reason, answer, and cited_source_ids."
+      },
+      {
+        "from": "human",
+        "value": "{\"question\":\"What changed between Redis 6 ACLs and Redis 7 ACL selectors?\",\"redis_version\":null,\"evidence\":[{\"source_id\":\"acl-redis6\",\"redis_version\":\"6.0\",\"text\":\"Redis 6 introduced ACL users with command and key-pattern restrictions.\"},{\"source_id\":\"acl-selectors-redis7\",\"redis_version\":\"7.0\",\"text\":\"Redis 7 supports ACL selectors: independent permission rule sets.\"}]}"
+      },
+      {
+        "from": "gpt",
+        "value": "{\"intent\":\"configuration\",\"module\":\"configuration\",\"rewritten_query\":\"Redis 6 ACLs compared with Redis 7 ACL selectors\",\"mode\":\"hybrid\",\"should_abstain\":false,\"reason\":\"\",\"answer\":\"Redis 6 introduced ACL users and command/key restrictions; Redis 7 adds independent ACL selector rule sets.\",\"cited_source_ids\":[\"acl-redis6\",\"acl-selectors-redis7\"]}"
+      }
+    ]
+  }
+]
